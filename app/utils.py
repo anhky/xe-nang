@@ -12,21 +12,10 @@ class CustomVideoTrack(MediaStreamTrack):
     def __init__(self, track, filename):
         super().__init__()
         self.track = track
-        self.frame_count = 0
-        self.object_counts = None
-        self.center_points = {}
-        self.running_boats = {}
-        self.out = cv2.VideoWriter(f'data/out_{filename}', cv2.VideoWriter_fourcc(*'mp4v'), 30, (1280, 720))
-        self.set_trackid_moving = set()
-        self.set_trackid_stationary = set()
-        self.set_trackid_slow = set()
-        self.movement_logs = {}
         self.log_filename = f'data/log_{filename}.json'  # Log file
 
     async def recv(self):
         frame = await self.track.recv()
-        self.frame_count += 1
-
         try:
             img = frame.to_ndarray(format="bgr24")
             img = cv2.resize(img, (1280, 720))
@@ -36,7 +25,7 @@ class CustomVideoTrack(MediaStreamTrack):
             new_frame.pts = frame.pts
             new_frame.time_base = frame.time_base
 
-            self.out.write(img)
+            # self.out.write(img)
             
             return new_frame
         except Exception as e:

@@ -3,6 +3,7 @@ from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaPlayer, MediaRelay
 import platform
 
+import cv2
 from fastapi.responses import JSONResponse
 
 from app.utils import CustomVideoTrack
@@ -14,7 +15,8 @@ pcs = set()
 
 def create_local_tracks(play_from, decode):
     global relay, webcam
-    options = {"framerate": "30", "video_size": "1280x720"}
+    # options = {"framerate": "30", "video_size": "1280x720"}
+    options = {"framerate": "30", "video_size": "1280x720", "rtbufsize": "10000000"}
     if play_from:
         player = MediaPlayer(play_from, decode=decode, options=options)
         return player.audio, player.video
@@ -36,13 +38,6 @@ async def handle_offer(request):
     pc = RTCPeerConnection()
     pcs.add(pc)
 
-    @pc.on("iceconnectionstatechange")
-    async def on_iceconnectionstatechange():
-        print("ICE connection state is %s" % pc.iceConnectionState)
-        if pc.iceConnectionState in ["failed", "closed", "disconnected"]:
-            await pc.close()
-            pcs.discard(pc)
-
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
         print("Connection state is %s" % pc.connectionState)
@@ -53,12 +48,14 @@ async def handle_offer(request):
                 webcam.video.stop()
     
     
-    play_from = f"./data/{filename}"
+    # play_from = f"./data/{filename}"
+    play_from = None
     decode = True
     audio, video = create_local_tracks(play_from=play_from, decode=decode)
     if video:
         process_video = CustomVideoTrack(video, filename)
         pc.addTrack(process_video)
+        
 
     await pc.setRemoteDescription(offer)
     answer = await pc.createAnswer()
