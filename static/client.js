@@ -9,22 +9,6 @@ function negotiate() {
     .then((offer) => {
       return pc.setLocalDescription(offer);
     })
-    // .then(() => {
-    //   // wait for ICE gathering to complete
-    //   return new Promise((resolve) => {
-    //     if (pc.iceGatheringState === "complete") {
-    //       resolve();
-    //     } else {
-    //       const checkState = () => {
-    //         if (pc.iceGatheringState === "complete") {
-    //           pc.removeEventListener("icegatheringstatechange", checkState);
-    //           resolve();
-    //         }
-    //       };
-    //       pc.addEventListener("icegatheringstatechange", checkState);
-    //     }
-    //   });
-    // })
     .then(() => {
       var offer = pc.localDescription;
       return fetch("/offer", {
