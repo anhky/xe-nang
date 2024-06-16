@@ -1,0 +1,7 @@
+uvicorn
+fastapi
+numpy
+torch
+ultralytics
+aiortc
+deep_sort_realtime
