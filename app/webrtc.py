@@ -16,7 +16,11 @@ pcs = set()
 def create_local_tracks(play_from, decode):
     global relay, webcam
     # options = {"framerate": "30", "video_size": "1280x720"}
-    options = {"framerate": "30", "video_size": "1280x720", "rtbufsize": "10000000"}
+    # options = {"framerate": "30", "video_size": "1280x720", "rtbufsize": "10000000"}
+    # options = {"framerate": "30", "video_size": "1280x720", "rtbufsize": "10000000", "pix_fmt": "yuv420p"}
+    options = {"framerate": "30", "video_size": "960x540"}
+    options = {"framerate": "30", "video_size": "640x360"}
+
     if play_from:
         player = MediaPlayer(play_from, decode=decode, options=options)
         return player.audio, player.video
@@ -25,7 +29,7 @@ def create_local_tracks(play_from, decode):
             if platform.system() == "Darwin":
                 webcam = MediaPlayer("default:none", format="avfoundation", options=options)
             elif platform.system() == "Windows":
-                webcam = MediaPlayer("video=Integrated Webcam", format="dshow", options=options)
+                webcam = MediaPlayer("video=Logi C270 HD WebCam", format="dshow", options=options)
             else:
                 webcam = MediaPlayer("/dev/video0", format="v4l2", options=options)
             relay = MediaRelay()
