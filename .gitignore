@@ -30,3 +30,5 @@ archive.zip
 .DS_Store
 
 data/
+data_input/
+data_output/
