@@ -10,10 +10,9 @@ from app.yolov8 import process_frame
 class CustomVideoTrack(MediaStreamTrack):
     kind = "video"
 
-    def __init__(self, track, filename):
+    def __init__(self, track):
         super().__init__()
         self.track = track
-        self.log_filename = f'data/log_{filename}.json'  # Log file
         self.frame_count = 0
         now = datetime.now()
         timestamp = now.strftime("%Y%m%d_%H%M%S")

@@ -3,7 +3,8 @@ from aiortc import RTCPeerConnection, RTCSessionDescription, MediaStreamTrack
 import cv2
 # from fastapi.responses import JSONResponse
 
-from app.utils import CustomVideoTrack
+# from app.utils import CustomVideoTrack
+from app.yolov8 import process_frame
 
 relay = None
 webcam = None
@@ -19,6 +20,8 @@ class VideoTransformTrack(MediaStreamTrack):
     async def recv(self):
         frame = await self.track.recv()
         img = frame.to_ndarray(format="bgr24")
+        # img = CustomVideoTrack(img)
+        img = process_frame(img)
         cv2.imshow("Received Video", img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
