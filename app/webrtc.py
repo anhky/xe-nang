@@ -20,7 +20,6 @@ class VideoTransformTrack(MediaStreamTrack):
     async def recv(self):
         frame = await self.track.recv()
         img = frame.to_ndarray(format="bgr24")
-        # img = CustomVideoTrack(img)
         img = process_frame(img)
         cv2.imshow("Received Video", img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
