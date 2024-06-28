@@ -7,12 +7,7 @@ async function negotiate() {
 
     pc = new RTCPeerConnection(config);
 
-    // var stream = await navigator.mediaDevices.getUserMedia({
-    //     video: {
-    //         width: { min: 1024, ideal: 1280, max: 1920 },
-    //         height: { min: 576, ideal: 720, max: 1080 },
-    //     }
-    // });
+    // Lấy và thêm luồng video từ thiết bị người dùng
     var stream = await navigator.mediaDevices.getUserMedia({
         video: {
             width: { exact: 640 },
@@ -26,10 +21,20 @@ async function negotiate() {
     });
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-    var videoElement = document.getElementById('video');
-    videoElement.srcObject = stream;
-    videoElement.muted = true; // Tắt âm thanh trên thẻ video
-    
+    // Thiết lập luồng video truyền từ thiết bị người dùng
+    var localVideoElement = document.getElementById('localVideo');
+    localVideoElement.srcObject = stream;
+    localVideoElement.muted = true; // Tắt âm thanh trên thẻ video
+
+    // Đăng ký nhận luồng video từ peer
+    pc.ontrack = function(event) {
+        if (event.track.kind === 'video') {
+            var remoteVideoElement = document.getElementById('remoteVideo');
+            remoteVideoElement.srcObject = event.streams[0];
+        }
+    };
+
+    // Xử lý ứng viên ICE và đàm phán kết nối
     pc.onicecandidate = event => {
         if (event.candidate === null) {
             fetch('/offer', {
@@ -57,12 +62,25 @@ function start() {
 }
 
 function stop() {
-    pc.close();
-    pc = null;
+    if (pc) {
+        pc.close();
+        pc = null;
 
-    document.getElementById('start').style.display = 'inline';
-    document.getElementById('stop').style.display = 'none';
-    document.getElementById('video').srcObject.getTracks().forEach(track => track.stop());
+        var localVideoElement = document.getElementById('localVideo');
+        if (localVideoElement.srcObject) {
+            localVideoElement.srcObject.getTracks().forEach(track => track.stop());
+            localVideoElement.srcObject = null;
+        }
+
+        var remoteVideoElement = document.getElementById('remoteVideo');
+        if (remoteVideoElement.srcObject) {
+            remoteVideoElement.srcObject.getTracks().forEach(track => track.stop());
+            remoteVideoElement.srcObject = null;
+        }
+
+        document.getElementById('start').style.display = 'inline';
+        document.getElementById('stop').style.display = 'none';
+    }
 }
 
 document.getElementById('start').addEventListener('click', start);
