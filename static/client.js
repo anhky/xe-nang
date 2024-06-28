@@ -13,7 +13,7 @@ async function negotiate() {
             width: { exact: 640 },
             height: { exact: 480 },
             frameRate: {
-                ideal: 15, // Giá trị fps lý tưởng
+                ideal: 30, // Giá trị fps lý tưởng
                 min: 15,   // Giá trị fps thấp nhất
                 max: 30    // Giá trị fps cao nhất
               }
