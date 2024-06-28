@@ -14,11 +14,16 @@ async function negotiate() {
     //     }
     // });
     var stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-          width: { exact: 640 },
-          height: { exact: 480 }
-      }
-  });
+        video: {
+            width: { exact: 640 },
+            height: { exact: 480 },
+            frameRate: {
+                ideal: 15, // Giá trị fps lý tưởng
+                min: 15,   // Giá trị fps thấp nhất
+                max: 30    // Giá trị fps cao nhất
+              }
+        }
+    });
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
     var videoElement = document.getElementById('video');
