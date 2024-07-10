@@ -1,72 +1,64 @@
-var pc = null;
+let pc;
 
-function negotiate() {
-  pc.addTransceiver("video", { direction: "recvonly" });
-  pc.addTransceiver("audio", { direction: "recvonly" });
+async function negotiate() {
+    try {
+        pc.addTransceiver('video', { direction: 'recvonly' });
 
-  return pc
-    .createOffer()
-    .then((offer) => {
-      return pc.setLocalDescription(offer);
-    })
-    .then(() => {
-      var offer = pc.localDescription;
-      return fetch("/offer", {
-        body: JSON.stringify({
-          sdp: offer.sdp,
-          type: offer.type,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
-    })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then((answer) => {
-      if (!answer || !answer.sdp || !answer.type) {
-        throw new Error('Invalid answer received');
-      }
-      return pc.setRemoteDescription(answer);
-    })
-    .catch((e) => {
-      console.error('Failed to negotiate:', e);
-      alert("Failed to negotiate: " + e.message);
-    });
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        const response = await fetch('/offer', {
+            body: JSON.stringify({ sdp: offer.sdp, type: offer.type }),
+            headers: { "Content-Type": "application/json" },
+            method: 'POST'
+        });
+
+        if (!response.ok) throw new Error('Network response was not ok');
+        const answer = await response.json();
+        if (!answer || !answer.sdp || !answer.type) throw new Error('Invalid answer received');
+
+        await pc.setRemoteDescription(answer);
+    } catch (e) {
+        console.error('Failed to negotiate:', e);
+        alert("Failed to negotiate: " + e.message);
+    }
 }
 
 function start() {
-  var config = {
-    sdpSemantics: "unified-plan"
-  };
-  pc = new RTCPeerConnection(config);
-  pc.ontrack = function (evt) {
-    if (evt.track.kind == "video") {
-      document.getElementById("video").srcObject = evt.streams[0];
-    } else {
-      document.getElementById("audio").srcObject = evt.streams[0];
-    }
-  };
+    const config = { sdpSemantics: 'unified-plan' };
+    pc = new RTCPeerConnection(config);
 
-  document.getElementById("start").style.display = "none";
-  negotiate();
-  document.getElementById("stop").style.display = "inline-block";
+    pc.ontrack = function (evt) {
+        if (evt.track.kind === 'video') {
+            document.getElementById('video').srcObject = evt.streams[0];
+        }
+    };
+
+    pc.oniceconnectionstatechange = function () {
+        if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+            stop();
+        }
+    };
+
+    document.getElementById('start').style.display = 'none';
+    negotiate();
+    document.getElementById('stop').style.display = 'inline-block';
 }
 
 function stop() {
-  document.getElementById("stop").style.display = "none";
-  document.getElementById("start").style.display = "inline-block";
+    document.getElementById('stop').style.display = 'none';
+    document.getElementById('start').style.display = 'inline-block';
 
-  // close peer connection
-  setTimeout(() => {
     if (pc) {
-      pc.close();
-      pc = null;
+        pc.close();
+        pc = null;
     }
-  }, 500);
+
+    document.getElementById('video').srcObject = null;
 }
+
+window.addEventListener('beforeunload', () => {
+    if (pc) {
+        pc.close();
+    }
+});
