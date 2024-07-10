@@ -25,7 +25,13 @@ async function negotiate() {
 }
 
 function start() {
-    const config = { sdpSemantics: 'unified-plan' };
+    const config = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' }  // Use a public STUN server
+        ],
+        iceTransportPolicy: 'all',  // Use 'all' to ensure connectivity
+        sdpSemantics: 'unified-plan'
+    };
     pc = new RTCPeerConnection(config);
 
     pc.ontrack = function (evt) {

@@ -43,7 +43,7 @@ class CustomVideoTrack(MediaStreamTrack):
             cv2.putText(img, f"{current_time}-{self.is_cuda}", self.position, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
             # Process every 3rd frame to reduce processing load
-            if self.frame_count % 3 == 0:
+            if self.frame_count % 2 == 0:
                 img = process_frame(img)
 
             # Uncomment if you need to save output video
