@@ -1,4 +1,6 @@
 let pc;
+let mediaRecorder;
+let recordedChunks = [];
 
 async function negotiate() {
     try {
@@ -36,7 +38,11 @@ function start() {
 
     pc.ontrack = function (evt) {
         if (evt.track.kind === 'video') {
-            document.getElementById('video').srcObject = evt.streams[0];
+            const videoElement = document.getElementById('video');
+            videoElement.srcObject = evt.streams[0];
+
+            // Start recording
+            startRecording(evt.streams[0]);
         }
     };
 
@@ -60,11 +66,45 @@ function stop() {
         pc = null;
     }
 
+    if (mediaRecorder) {
+        mediaRecorder.stop();
+    }
+
     document.getElementById('video').srcObject = null;
+}
+
+function startRecording(stream) {
+    mediaRecorder = new MediaRecorder(stream);
+    recordedChunks = [];
+
+    mediaRecorder.ondataavailable = function(event) {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = function() {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'recorded_video.webm';
+        document.body.appendChild(a);
+        a.click();
+
+        URL.revokeObjectURL(url);
+    };
+
+    mediaRecorder.start();
 }
 
 window.addEventListener('beforeunload', () => {
     if (pc) {
         pc.close();
+    }
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
     }
 });
