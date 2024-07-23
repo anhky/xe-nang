@@ -12,7 +12,7 @@ logging.getLogger('ultralytics').setLevel(logging.ERROR)
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-# Path to the trained model weights
+# Path to the trained model weights and images
 model_path = "./models/m_merge_new_det_N.pt"
 start_img_path = "./data/start.jpg"
 pending_img_path = "./data/pending.png"
@@ -27,25 +27,23 @@ colors = [[random.randint(0, 255) for _ in range(3)] for _ in names]
 # Initialize DeepSort tracker
 def initialize_tracker():
     return DeepSort(max_age=30)
-
-tracker = initialize_tracker()
+tracker = DeepSort(max_age=30)
 prev_block_detected = False
 
 # Define the class names you are interested in
 class_names_of_interest = ["pallet", "block", "block_thang"]
 
-# Load the start and pending images once
+# Load and resize the start and pending images once
 start_img = cv2.imread(start_img_path)
 pending_img = cv2.imread(pending_img_path)
 
-# Resize the images to fit in the corner
 def resize_overlay_image(image, frame):
     return cv2.resize(image, (frame.shape[1] // 10, frame.shape[0] // 10))
 
 start_img_resized = resize_overlay_image(start_img, np.zeros((1080, 1920, 3), dtype=np.uint8))
 pending_img_resized = resize_overlay_image(pending_img, np.zeros((1080, 1920, 3), dtype=np.uint8))
 
-def draw_bracketed_bounding_box(image, top_left, bottom_right, color, full_box=True, bracket_length=20, thickness=2):
+def draw_bracketed_bounding_box(image, top_left, bottom_right, color, full_box=True, bracket_length=20, thickness=3):
     top_right = (bottom_right[0], top_left[1])
     bottom_left = (top_left[0], bottom_right[1])
 
@@ -143,7 +141,12 @@ def process_frame(frame):
     
     if "pallet" in detected_objects and "block" in detected_objects and "block_thang" in detected_objects:
         draw_lines(frame, detected_objects["pallet"], detected_objects["block"], detected_objects["block_thang"], crop_x)
-    
+
     prev_block_detected = block_detected
 
-    return frame
+    return frame, detected_objects
+
+def draw_lines_if_needed(frame, detected_objects):
+    crop_x = frame.shape[1] // 3
+    if "pallet" in detected_objects and "block" in detected_objects and "block_thang" in detected_objects:
+        draw_lines(frame, detected_objects["pallet"], detected_objects["block"], detected_objects["block_thang"], crop_x)
