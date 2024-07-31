@@ -1,9 +1,12 @@
 let pc;
-let mediaRecorder;
-let recordedChunks = [];
+let mediaRecorder1;
+let mediaRecorder2;
+let recordedChunks1 = [];
+let recordedChunks2 = [];
 
 async function negotiate() {
     try {
+        pc.addTransceiver('video', { direction: 'recvonly' });
         pc.addTransceiver('video', { direction: 'recvonly' });
 
         const offer = await pc.createOffer();
@@ -36,13 +39,20 @@ function start() {
     };
     pc = new RTCPeerConnection(config);
 
+    let videoTracks = 0;
     pc.ontrack = function (evt) {
         if (evt.track.kind === 'video') {
-            const videoElement = document.getElementById('video');
-            videoElement.srcObject = evt.streams[0];
-
-            // Start recording
-            startRecording(evt.streams[0]);
+            if (videoTracks === 0) {
+                const videoElement1 = document.getElementById('video_1');
+                videoElement1.srcObject = evt.streams[0];
+                startRecording(evt.streams[0], 1);
+                videoTracks++;
+            } else if (videoTracks === 1) {
+                const videoElement2 = document.getElementById('video_2');
+                videoElement2.srcObject = evt.streams[0];
+                startRecording(evt.streams[0], 2);
+                videoTracks++;
+            }
         }
     };
 
@@ -66,16 +76,20 @@ function stop() {
         pc = null;
     }
 
-    if (mediaRecorder) {
-        mediaRecorder.stop();
+    if (mediaRecorder1) {
+        mediaRecorder1.stop();
+    }
+    if (mediaRecorder2) {
+        mediaRecorder2.stop();
     }
 
-    document.getElementById('video').srcObject = null;
+    document.getElementById('video_1').srcObject = null;
+    document.getElementById('video_2').srcObject = null;
 }
 
-function startRecording(stream) {
-    mediaRecorder = new MediaRecorder(stream);
-    recordedChunks = [];
+function startRecording(stream, index) {
+    const mediaRecorder = new MediaRecorder(stream);
+    let recordedChunks = [];
 
     mediaRecorder.ondataavailable = function(event) {
         if (event.data.size > 0) {
@@ -90,7 +104,7 @@ function startRecording(stream) {
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = 'recorded_video.webm';
+        a.download = `recorded_video${index}.webm`;
         document.body.appendChild(a);
         a.click();
 
@@ -98,13 +112,24 @@ function startRecording(stream) {
     };
 
     mediaRecorder.start();
+
+    if (index === 1) {
+        mediaRecorder1 = mediaRecorder;
+        recordedChunks1 = recordedChunks;
+    } else if (index === 2) {
+        mediaRecorder2 = mediaRecorder;
+        recordedChunks2 = recordedChunks;
+    }
 }
 
 window.addEventListener('beforeunload', () => {
     if (pc) {
         pc.close();
     }
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
+    if (mediaRecorder1 && mediaRecorder1.state !== 'inactive') {
+        mediaRecorder1.stop();
+    }
+    if (mediaRecorder2 && mediaRecorder2.state !== 'inactive') {
+        mediaRecorder2.stop();
     }
 });

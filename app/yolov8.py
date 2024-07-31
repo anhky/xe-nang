@@ -77,7 +77,7 @@ def draw_lines(frame, pallet, block, block_thang, crop_x):
     block_thang_y2 = int(block_thang[3])
 
     if block_thang_y1 < pallet_y1 < block_thang_y2:
-        cv2.line(frame, (pallet_x1, pallet_y1), (block_thang_x2, pallet_y1), (0, 0, 255), 2)
+        cv2.line(frame, (pallet_x1, pallet_y1), (block_thang_x2, pallet_y1), (0, 0, 255), 5)
         cv2.putText(frame, "start alignment", (pallet_x1 + (block_thang_x2 - pallet_x1) // 2, pallet_y1 - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
@@ -95,7 +95,7 @@ def draw_lines(frame, pallet, block, block_thang, crop_x):
     else:
         frame[0:pending_img_resized.shape[0], 0:pending_img_resized.shape[1]] = pending_img_resized
 
-def process_frame(frame):
+async def process_frame(frame):
     global tracker, prev_block_detected
 
     height, width, _ = frame.shape
