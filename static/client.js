@@ -43,13 +43,15 @@ function start() {
     pc.ontrack = function (evt) {
         if (evt.track.kind === 'video') {
             if (videoTracks === 0) {
+                console.log(evt.track)
                 const videoElement1 = document.getElementById('video_1');
-                videoElement1.srcObject = evt.streams[0];
+                videoElement1.srcObject = new MediaStream([evt.track]);
                 startRecording(evt.streams[0], 1);
                 videoTracks++;
             } else if (videoTracks === 1) {
                 const videoElement2 = document.getElementById('video_2');
-                videoElement2.srcObject = evt.streams[0];
+                console.log(evt.track)
+                videoElement2.srcObject = new MediaStream([evt.track]);
                 startRecording(evt.streams[0], 2);
                 videoTracks++;
             }
