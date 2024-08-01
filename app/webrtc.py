@@ -18,12 +18,16 @@ write_video_1_thread = None
 write_video_2_thread = None
 video_capture = None
 stop_event = threading.Event()
+first_user_pc = None
 
 # rtsp_url = "rtsp://admin:admin@192.168.0.19:8081/h264_pcm.sdp"  # or "rtsp://admin:admin@192.168.0.19:8081/h264_ulaw.sdp"
-rtsp_url1 = "rtsp://admin:admin@192.168.50.46:8081/h264_pcm.sdp"
-rtsp_url2 = "rtsp://admin:admin@192.168.50.46:8081/h264_pcm.sdp"
+rtsp_url1 = "rtsp://admin:admin@192.168.0.2:8081/h264_pcm.sdp"
+rtsp_url2 = "rtsp://admin:admin@192.168.0.2:8081/h264_pcm.sdp"
 play_from1 = "data_input/xenang_cut2.mp4"
 play_from2 = "data_input/xenang_cut2.mp4"
+
+process_video_1 = None
+process_video_2 = None
 
 def write_video(ip_camera, stop_event, label):
     video_capture = cv2.VideoCapture(ip_camera)
@@ -91,7 +95,7 @@ async def create_local_tracks(buffer_size="64000"):
 
 @app.post("/offer")
 async def handle_offer(request: Request):
-    global write_video_1_thread, write_video_2_thread, stop_event
+    global write_video_1_thread, write_video_2_thread, stop_event, process_video_1, process_video_2, first_user_pc
     params = await request.json()
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 
@@ -102,39 +106,47 @@ async def handle_offer(request: Request):
     async def on_connectionstatechange():
         print("Connection state is %s" % pc.connectionState)
         if pc.connectionState in ["failed", "closed", "disconnected"]:
-            print("Connection closed, stopping video recording.")
+            print("Connection closed, checking if it is the first user.")
             await pc.close()
             pcs.discard(pc)
-            if webcam_1 and webcam_1.video:
-                webcam_1.video.stop()
-            if webcam_2 and webcam_2.video:
-                webcam_2.video.stop()
-            stop_event.set()  # Signal the write_video thread to stop
-            print("stop_event set.")
+            if pc == first_user_pc:
+                print("First user disconnected, stopping video recording and disconnecting all users.")
+                if webcam_1 and webcam_1.video:
+                    webcam_1.video.stop()
+                if webcam_2 and webcam_2.video:
+                    webcam_2.video.stop()
+                stop_event.set()  # Signal the write_video thread to stop
+                print("stop_event set.")
+                # Disconnect all users
+                for other_pc in pcs:
+                    await other_pc.close()
+                pcs.clear()
+            else:
+                print("Non-first user disconnected.")
 
     buffer_size = "64000"  # Start with a moderate buffer size for local network
-    video_1, video_2 = await create_local_tracks(buffer_size=buffer_size)
-
-    stop_event = threading.Event()  # Create a new stop_event for the new session
-
-    if video_1:
+    if process_video_1 is None or process_video_2 is None:
+        video_1, video_2 = await create_local_tracks(buffer_size=buffer_size)
         process_video_1 = CustomVideoTrack(video_1, "track_1")
-        pc.addTrack(process_video_1)
+        process_video_2 = CustomVideoTrack(video_2, "track_2")
         
+        stop_event = threading.Event()  # Create a new stop_event for the new session
+
         write_video_1_thread = threading.Thread(target=write_video, args=(rtsp_url1, stop_event, "track_1"))
         write_video_1_thread.start()
-    
-    if video_2:
-        process_video_2 = CustomVideoTrack(video_2, "track_2")
-        pc.addTrack(process_video_2)
 
         write_video_2_thread = threading.Thread(target=write_video, args=(rtsp_url2, stop_event, "track_2"))
         write_video_2_thread.start()
-    
+
+    # Assign the first user pc if not already assigned
+    if first_user_pc is None:
+        first_user_pc = pc
+
+    pc.addTrack(process_video_1)
+    pc.addTrack(process_video_2)
 
     await pc.setRemoteDescription(offer)
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
     
     return JSONResponse({"sdp": pc.localDescription.sdp, "type": pc.localDescription.type})
-
