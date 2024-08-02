@@ -23,6 +23,8 @@ first_user_pc = None
 # rtsp_url = "rtsp://admin:admin@192.168.0.19:8081/h264_pcm.sdp"  # or "rtsp://admin:admin@192.168.0.19:8081/h264_ulaw.sdp"
 rtsp_url1 = "rtsp://admin:admin@192.168.0.2:8081/h264_pcm.sdp"
 rtsp_url2 = "rtsp://admin:admin@192.168.0.2:8081/h264_pcm.sdp"
+# rtsp_url1 = "rtsp://admin:vivn1213@192.168.1.64:554/h264_pcm.sdp"
+# rtsp_url2 = "rtsp://admin:vivn1213@192.168.1.80:554/h264_pcm.sdp"
 play_from1 = "data_input/xenang_cut2.mp4"
 play_from2 = "data_input/xenang_cut2.mp4"
 
@@ -121,14 +123,17 @@ async def handle_offer(request: Request):
                 for other_pc in pcs:
                     await other_pc.close()
                 pcs.clear()
+                first_user_pc = None
             else:
                 print("Non-first user disconnected.")
 
     buffer_size = "64000"  # Start with a moderate buffer size for local network
     if process_video_1 is None or process_video_2 is None:
         video_1, video_2 = await create_local_tracks(buffer_size=buffer_size)
-        process_video_1 = CustomVideoTrack(video_1, "track_1")
-        process_video_2 = CustomVideoTrack(video_2, "track_2")
+        if video_1:
+            process_video_1 = CustomVideoTrack(video_1, "track_1")
+        if video_2:
+            process_video_2 = CustomVideoTrack(video_2, "track_2")
         
         stop_event = threading.Event()  # Create a new stop_event for the new session
 
